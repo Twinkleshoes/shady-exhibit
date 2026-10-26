@@ -1,0 +1,8 @@
+{
+  "name": "The Shady Exhibit",
+  "description": "An online 3D museum heist: default four-player teamwork or optional two-player Duel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

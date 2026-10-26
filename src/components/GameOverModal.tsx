@@ -1,0 +1,27 @@
+import {modeConfig} from '../game/modes.js';
+import React,{useEffect,useRef,useState} from 'react';
+import type {Socket} from 'socket.io-client';
+import {Gem,Shield,DoorOpen,RotateCcw,Home,Archive,Clock} from 'lucide-react';
+import type {ClientGameState} from '../types/game.js';
+import './results.css';
+interface Props {socket:Socket|null;gameState:ClientGameState;onMainMenu:()=>void}
+const duration=(seconds:number)=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
+export function GameOverModal({socket,gameState,onMainMenu}:Props){
+ const report=gameState.results,open=gameState.viewingResults&&!!report;
+ const [pending,setPending]=useState(false),heading=useRef<HTMLHeadingElement>(null);
+ useEffect(()=>{setPending(false);if(open)heading.current?.focus();},[open,report?.roundId]);
+ useEffect(()=>{if(!pending)return;const id=setTimeout(()=>setPending(false),5000);return()=>clearTimeout(id);},[pending]);
+ useEffect(()=>{if(!open)return;const listener=(e:KeyboardEvent)=>{if(e.key!=='Tab')return;const nodes=[...document.querySelectorAll<HTMLElement>('.results-file button:not(:disabled),.results-file [tabindex="0"]')];if(!nodes.length)return;const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===heading.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}};document.addEventListener('keydown',listener);return()=>document.removeEventListener('keydown',listener);},[open]);
+ if(!open||!report)return null;
+ const config=modeConfig(gameState.mode),capacity=config.players;
+ const count=gameState.connectedPlayerCount,stolen=report.treasures.filter(t=>t.stolen).length;
+ let reduced=false;try{reduced=localStorage.getItem('shady_menu_still')==='true';}catch{}
+ const title=report.interrupted?'Round Interrupted':report.winner==='thieves'?'Heist Successful':'Museum Secured';
+ const send=(event:string)=>{if(pending)return;setPending(true);socket?.emit(event);};
+ return <div className={`results-screen ${reduced?'results-still':''}`}><section className="results-file" role="dialog" aria-modal="true" aria-labelledby="results-title" aria-describedby="results-reason">
+  <header className="results-heading"><div><span className="results-eyebrow">THE SHADY EXHIBIT · {config.name} · CLOSED CASE FILE</span><h2 ref={heading} tabIndex={-1} id="results-title">{title}</h2><p id="results-reason">{report.reason}</p></div><span className="results-seal" aria-hidden="true">{report.interrupted?<Archive/>:report.winner==='guard'?<Shield/>:<DoorOpen/>}</span></header>
+  <div className="results-overview"><div className="results-treasures"><span className="results-label">Exhibits taken · {stolen} / {report.treasures.length}</span><div className="results-exhibits">{report.treasures.map((t,i)=><div key={t.id} className={t.stolen?'is-taken':''} title={t.name}><span aria-hidden="true">{i===0?<Gem/>:i===1?<svg viewBox="0 0 32 32"><path d="M8 26h16M11 23h10l-2-7 3-7-7-5-5 7 4 6Z"/></svg>:<svg viewBox="0 0 32 32"><path d="M11 5h10M12 6v5c-10 8-8 15 4 16 12-1 14-8 4-16V6M10 18h12"/></svg>}</span><small>{t.stolen?'Stolen':'Protected'}</small><span className="sr-only">{t.name}</span></div>)}</div></div><div className="results-duration"><Clock size={18}/><strong>{duration(report.duration)}</strong><span>Round duration</span></div><dl className="results-totals"><div><dt>Successful captures</dt><dd>{report.totals.captures}</dd></div><div><dt>Innocent inspections</dt><dd>{report.totals.innocentInspections}</dd></div><div><dt>{config.teammateRescue?'Rescue activations':'Automatic releases'}</dt><dd>{config.teammateRescue?report.totals.rescues:report.automaticReleases}</dd></div></dl></div>
+  <div className="results-roster"><h3>Personnel & final outcomes</h3><div className="results-player-grid">{report.players.map(p=><article className="results-player" key={p.id}><div className="results-player-top"><span className="results-role">{p.role==='guard'?'SECURITY':'THIEF'}</span>{p.departed&&<small>Left room</small>}</div><h4>{p.name}{p.id===gameState.myId&&<small> · You</small>}</h4><p className={`results-status results-status--${p.status||'security'}`}>{p.role==='guard'?'Museum Security':p.status==='escaped'?'Escaped':p.status==='captured'?'Captured':'Still in the museum'}</p><p className="results-player-stats">{p.role==='guard'?`${p.captures} successful captures · ${p.innocentInspections} innocent inspections`:`${p.treasures} treasures stolen${config.teammateRescue?` · ${p.rescues} rescue activations`:' · no teammate rescue'}`}</p></article>)}</div></div>
+  <footer className="results-actions"><div className="results-replay">{gameState.isHost?<><button className="results-primary" disabled={count!==capacity||pending} onClick={()=>send('restart_game')}><RotateCcw size={16}/>{pending?'Preparing…':'Play Again — Rotate Guard'}</button><p>{count<capacity?`Waiting for ${capacity-count} more ${capacity-count===1?'player':'players'}. ${capacity} are required to play again.`:'Everyone in this room will enter loading and a new private briefing.'}</p></>:<p>Waiting for the host to start the next round. {count} / {capacity} players connected.</p>}</div><button disabled={pending} onClick={()=>send('return_to_lobby')}><Home size={16}/>Return to Lobby</button><button onClick={onMainMenu}><DoorOpen size={16}/>Main Menu</button></footer>
+ </section></div>;
+}

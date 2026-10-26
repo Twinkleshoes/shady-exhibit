@@ -1,0 +1,44 @@
+THE SHADY EXHIBIT — 0.4.0 (FOUR-PLAYER HEIST + OPTIONAL TWO-PLAYER DUEL)
+
+CHOOSE ONE DELIVERY METHOD
+A. Extract shady-duel-full.zip into a new empty folder.
+B. Or extract BOTH shady-duel-source.zip and shady-duel-assets.zip into the SAME empty
+   parent folder, merging their shady-exhibit folders. Do not nest one inside the other.
+Both methods contain byte-for-byte the same project. Do not mix these files with older ZIPs.
+
+The shady-exhibit folder must contain PLAY-WINDOWS.cmd, package.json, package-lock.json,
+server.ts, src, scripts, public and dist. src/game/assets/visitor-surfaces.json is required too.
+
+WINDOWS LAUNCH
+1. Stop the old server with Ctrl+C in its command window.
+2. Install Node.js 24 if needed. First-time package installation needs internet access.
+3. Open shady-exhibit and double-click PLAY-WINDOWS.cmd.
+4. Wait for installation. The browser opens http://127.0.0.1:3000 when ready.
+5. Keep the command window open. Do not open index.html directly.
+
+PLAY
+Create a room. Four-Player Heist is the default: four humans, one guard and three thieves.
+For two humans, the HOST selects Two-Player Duel in the lobby, then shares the room code.
+Both players must finish loading, read their private briefing and press Ready.
+The server starts a shared three-second countdown before movement and the round clock.
+Duel: four minutes, Sapphire + Bronze Sun, two guard inspection charges. First capture
+means eight-second detention and one concealed automatic new disguise. Second capture
+or timeout wins for security. Collect both active treasures and reach escape while free.
+The Imperial Seal is decorative in Duel. No teammate rescue in Duel.
+Mode changes lock during preparation, play and results. After results everyone must return
+to the lobby to change mode. Play Again keeps the selected mode and rotates the guard.
+
+MULTIPLAYER CONNECTIONS
+On one computer use independent tabs/windows (each connection is one human slot).
+On one LAN, other computers open http://HOST-LAN-IP:3000 and allow the server through
+Windows Firewall. Everyone must connect to the same server and join the same room code.
+A room code does not publish localhost to the internet. Public hosting is not configured.
+
+TERMINAL ALTERNATIVE (inside shady-exhibit)
+npm ci
+npm start
+This serves the included production build. For development use npm run dev.
+After source edits run npm run build before using npm start.
+Validation: npm test; npm run lint; npm run build.
+See docs/TWO-PLAYER-DUEL.md for rules, implementation and actual test coverage.
+Windows-native execution, public hosting and real remote latency remain untested.
