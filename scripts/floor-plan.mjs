@@ -1,0 +1,20 @@
+import {writeFileSync,mkdirSync} from 'node:fs';
+import {ROOMS,defaultWalls,defaultLamps,defaultTreasures,defaultSwitches,defaultMovables,DOORWAYS,HOLDING,ESCAPE} from '../src/game/world.ts';
+import {CAMERAS} from '../src/game/cameras.ts';
+const rect=(x,y,w,h,fill,extra='')=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" ${extra}/>`;
+const text=(x,y,s,size=22,fill='#273941',anchor='middle')=>`<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="${size}" fill="${fill}" font-family="Arial,sans-serif">${s}</text>`;
+let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1950" height="1540" viewBox="0 0 1950 1540">${rect(0,0,1950,1540,'#f6f3ec')}${text(60,70,'THE SHADY EXHIBIT',42,'#283c42','start')}${text(60,112,'Architecture pass · one floor · raised atrium / intimate galleries',24,'#637176','start')}<g transform="translate(60,170) scale(.9)">`;
+for(const r of ROOMS)svg+=rect(r.x,r.y,r.width,r.height,'#'+r.color.toString(16));
+svg+=rect(HOLDING.x,HOLDING.y,HOLDING.width,HOLDING.height,'#b29acb')+rect(ESCAPE.x,ESCAPE.y,ESCAPE.width,ESCAPE.height,'#97c8ae');
+for(const w of defaultWalls())svg+=rect(w.x,w.y,w.width,w.height,w.type==='railing'?'#a2544d':w.elevation>=3?'#5a615e':'#918878');
+for(const d of DOORWAYS)svg+=`<circle cx="${d.x}" cy="${d.y}" r="35" fill="none" stroke="#438274" stroke-width="4" stroke-dasharray="7 5"/>`;
+for(const m of defaultMovables())svg+=rect(m.x,m.y,m.width,m.height,'#819c97','stroke="#4a6763" stroke-width="3"');
+for(const l of defaultLamps())svg+=`<circle cx="${l.x}" cy="${l.y}" r="18" fill="#fff3b0" stroke="#9f7f36" stroke-width="4"/>`;
+for(const [i,t]of defaultTreasures().entries())svg+=`<path d="M${t.x} ${t.y-20}l20 20 -20 20 -20 -20Z" fill="#cd9d31" stroke="#7f6120" stroke-width="3"/>`+text(t.x,t.y-35,String(i+1),25);
+for(const s of defaultSwitches())svg+=rect(s.x-15,s.y-15,30,30,s.kind==='rescue'?'#8e5eb0':'#e09540');
+for(const c of CAMERAS){const x=c.position[0]/.05+400,y=c.position[2]/.05+300,tx=c.target[0]/.05+400,ty=c.target[2]/.05+300,d=Math.hypot(tx-x,ty-y);svg+=`<path d="M${x} ${y}l${(tx-x)/d*70} ${(ty-y)/d*70}" stroke="#2c6373" stroke-width="5"/><circle cx="${x}" cy="${y}" r="24" fill="#2c6373"/>`+text(x,y+9,c.id.slice(-2),24,'white');}
+svg+=text(750,45,'GEM GALLERY',32)+text(230,1210,'SCULPTURE',28)+text(1170,1210,'HISTORY',28)+text(700,640,'CENTRAL ATRIUM',29)+text(700,1255,'RECEPTION',20)+text(170,290,'SCULPTURE STUDY',20)+text(1280,270,'ORIGINS',20)+text(700,590,'8.2m skylit hall',20)+text(700,780,'Confluence',20)+text(560,1040,'SECURITY',19)+text(560,1065,'HOLDING',19)+text(855,1105,'ESCAPE',20)+text(700,1290,'SOUTH LOOP',27)+text(700,1370,'MAIN ENTRANCE',22)+`</g>`;
+const notes=[['CIRCULATION','Nine generous doorways connect the atrium,','three galleries, intro bays and south passage.','Both loops bypass the atrium. Building unchanged.'],['1 · ROYAL SAPPHIRE','Gem Gallery: display cases and velvet ropes.','Bodies stop at ropes; the shadow reaches through.'],['2 · BRONZE SUN','Sculpture Gallery: offset solid plinths.','Approach from the south for a clear shadow angle.'],['3 · IMPERIAL SEAL','History Gallery: staggered cabinets / partitions.','Find the eastward approach between solid exhibits.'],['SECURITY','Six fixed cameras with saved ±50° pan.','Blue arrows show default camera directions.','Solid exhibits create deliberate blind spots.'],['KEY','Gold diamond: treasure · cream circle: movable lamp','Orange square: jammer · purple square: rescue','Green zone: escape · dashed ring: open doorway','Grey-green block: movable display','Walls and exhibits match the actual server map.']];
+let y=210;for(const [title,...lines]of notes){svg+=text(1370,y,title,23,'#2d5059','start');y+=38;for(const line of lines){svg+=text(1370,y,line,17,'#5b6769','start');y+=28;}y+=47;}
+svg+=text(60,1500,'Architecture / arrangement pass · v0.3.0 · Layout overview generated from the shipped map definitions',20,'#637176','start')+'</svg>';
+mkdirSync('docs',{recursive:true});writeFileSync('docs/museum-floor-plan.svg',svg);

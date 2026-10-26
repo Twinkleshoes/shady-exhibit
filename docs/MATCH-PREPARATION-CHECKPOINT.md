@@ -1,0 +1,34 @@
+# Match loading, private briefings and synchronized start
+
+Continues the completed menu/lobby and Guided Tour project. A full recoverable pre-change project is saved as `shady-before-preparation.tar.gz`. The source overlay `shady-match-preparation-checkpoint.tar.gz` applies to that base; run `npm run build` after restoring it. Final source/assets ZIP delivery is intentionally deferred.
+
+## Implemented flow
+
+**Lobby → loading → private briefing → three-second countdown → gameplay.** The authoritative room status distinguishes all phases. A new round initializes visitors and private roles, but freezes movement, interactions, inspections, NPC simulation and the six-minute timer while preparing.
+
+Each renderer reports actual graphics setup, museum construction, visitor preparation and its first successful rendered frame. There are no percentages, artificial progress timers or automatic briefing acknowledgement. Current required museum/character assets are bundled locally in the application; scene readiness follows their construction and the first rendered view. All four current-round scene acknowledgements are required before role briefings appear.
+
+Each player receives their own dossier, with controls and rules matching the implemented game. The guard sees **Museum Security**, including CCTV pan controls, inspections and Guided Tour. The thief sees shadow stealing, camera-relative movement/orbit, Space carrying, LIVE indicators, rescue disguise changes and escape. Guard payloads omit the party identity list throughout preparation and retain anonymized visible visitors. Neither scene-ready nor briefing-ready ID lists are sent to clients; briefings display only the anonymous ready count and the recipient's own readiness flag.
+
+A Ready click is validated against connection membership, current round nonce, briefing phase, asset readiness and duplicate acknowledgement. The fourth confirmation records a common server deadline three seconds ahead. The server tick opens gameplay at that deadline, starts the six-minute clock and clears held inputs; clients display the server's countdown and start state rather than running their own start timers. Fresh keypresses are required if a key was already held across the transition.
+
+The navy/cream/brass panels use brief fades and a distinct security treatment. Background game views remain opaque-covered, inert and hidden from accessibility tools during preparation. Both the saved reduced-motion setting and OS preference suppress animation. Old menus close on entering preparation. Scenes are keyed by round, so replays construct fresh renderers and reset readiness. The menu/lobby backdrop remains unchanged and is disposed on match entry as before.
+
+Synchronous scene failures are caught by an error boundary; render-frame failures and context loss are reported too. Failed graphics resources are released, the server holds preparation, and a readable screen offers Leave. The server also has a 120-second loading timeout. Leaving or disconnecting in any preparation phase aborts without victory, transfers the host where needed and resets the remaining party to the lobby. No per-round countdown timeout callbacks can survive a reset: the deadline is room data checked by the server loop.
+
+## Actually tested
+
+- **81 automated checks passed**, including five new preparation tests and the existing physics, rules, navigation, shadows/lamps, characters, cover, identity and Guided Tour tests. New checks cover readiness validation/privacy, frozen actions/time, the exact server countdown boundary, held-input reset, loading failure/timeout and complete replay reset.
+- A focused **four-client real Socket.IO run** passed staggered scene readiness, early/duplicate/stale message rejection, withheld actions and tour/camera changes, anonymous briefing readiness, a shared three-second deadline, near-simultaneous localhost start, disconnect cleanup/host transfer in loading, briefing and countdown, shared failure recovery and room isolation.
+- **Two existing multiplayer scenarios passed** after the phase update: full guard victory through normal movement/inspections followed by real restart/guard rotation/room isolation, and the loading-barrier/disconnect regression. Test clients now acknowledge the actual briefing phase explicitly.
+- **Four independent Chromium browser sessions passed** actual delayed first-frame rendering, opaque loading with three of four scenes ready, both private dossiers, anonymous 3/4 confirmation, server countdown and playable reveal. Holding W through preparation did not move a thief after reveal; a fresh movement press worked. A fresh preparation attempt reset anonymous readiness. Real blocked WebGL creation produced a readable failure screen and a working Leave action/lobby recovery without an uncaught page error.
+- Briefing panels were inspected at 1366×768 and 1024×600, with visible Ready/Leave controls. Normal fade settings and reduced-motion animation suppression were checked, as was closing an already-open How to Play modal on preparation entry. Loading, guard/thief briefings, anonymous readiness, countdown and failure views were captured and visually reviewed.
+- TypeScript and the production build passed. The existing large-bundle advisory remains. No dependencies or lockfile changes were needed. Existing gameplay browser scripts gained a common helper that clicks the real Ready buttons; their full scenarios were not all rerun here.
+
+All network/browser execution was **localhost Linux with software WebGL**. Windows execution, Safari/Firefox, public hosting, realistic remote latency, native/low-end GPU performance, a real two-minute stalled loading device, and the full browser heist/replay regression suite remain unverified. The timeout boundary is covered by a server test, not by waiting two minutes on hardware. Network start arrival times on localhost differed by less than the test's 150 ms bound; perfect frame synchronization over arbitrary networks is not claimed.
+
+## Reproduction and later delivery
+
+Use `npm run test:preparation`, `npm test`, `npm run lint`, and `npm run build`. Against a running production server, use `npm run test:preparation-network` and `npm run test:preparation-browser`; `TEST_URL` selects the server, and `BROWSER_EXECUTABLE` can point to a compatible installed Chromium. Existing network tests use real room actions rather than test-only game-state endpoints.
+
+Refresh all clients when updating server and frontend together: older clients do not implement private Ready confirmation. The later source/assets delivery must include the two menu images in both `public/` and `dist/`, plus the existing locally bundled character assets, manifests/lockfile and `PLAY-WINDOWS.cmd`. Release ZIPs have not been replaced at this checkpoint.
